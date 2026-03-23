@@ -1,0 +1,440 @@
+---
+title: "Installing UCLCHEM"
+subtitle: "Windows · Linux · macOS"
+jupyter: uclchem_school
+format:
+  revealjs:
+    theme: default
+    code-line-numbers: true
+    highlight-style: github
+    slide-number: true
+    scrollable: true
+    chalkboard: true
+    mermaid-format: svg
+    incremental: true
+    include-in-header:
+      - text: <script src="incremental-show-first.js"></script>
+      - text: <script src="auto-fragment.js"></script>
+      - text: "<style>.reveal .fragment { transition: none !important; }</style>"
+execute:
+  eval: true
+  enabled: true
+  echo: true
+---
+
+## Reset Demo {visibility="hidden"}
+
+Run before presenting to start from a clean state:
+
+```{bash}
+pip uninstall uclchem -y 2>/dev/null || echo "Clean — ready to go!"
+```
+
+---
+
+## What is UCLCHEM?
+
+A gas-grain astrochemical code for modelling molecular abundances.
+
+::: {.incremental .show-first}
+- Written in **Fortran** (compiled), called from **Python**
+- Tracks gas-phase and grain-surface chemistry together
+- Multiple physics models: static clouds, collapse, shocks
+:::
+
+::: {.callout-important}
+The chemical network is **hard-coded for performance**.
+UCLCHEM must be compiled locally — it cannot be shipped as a pre-built wheel.
+:::
+
+---
+
+## How UCLCHEM Works
+
+Two components, both installed by `pip install .`:
+
+| Layer | Role |
+|---|---|
+| **Python layer** | Run models, interact with results, create chemical networks |
+| **Fortran core** | ODE integrator + chemistry solver, network hard-coded for speed |
+
+```{mermaid}
+%%| eval: true
+%%| echo: false
+flowchart LR
+    A["First install <br/> `pip install`"] --> B["Installed Python package<br/>+ compiled Fortran"]
+    B --> C{"Change<br/>network?"}
+    C -->|yes| D["MakeRates<br/>edit reactions/species"]
+    D --> E["pip install .<br/>recompile"]
+    E --> B
+    C -->|no| F["Science!"]
+```
+
+---
+
+# Part 1 — System Prerequisites
+
+---
+
+## What You Need
+
+| Requirement | Version | Notes |
+|---|---|---|
+| **Python** | 3.10 – 3.13 | via conda or venv |
+| **gfortran** | any recent | GNU Fortran compiler |
+| **git** | any | to clone the repo |
+| **pip** | bundled with Python | |
+
+Python libraries (`numpy`, `pandas`, `matplotlib`, …) are installed **automatically** — no manual `pip install` for them.
+
+---
+
+## Choosing a Python Version
+
+![](figures/python-eol-250318.png){fig-align="center"}
+
+::: {.incremental .show-first}
+- UCLCHEM supports Python **3.10 – 3.13**
+- **3.13** is the best choice as of now, 3.14 will be supported soon
+- Avoid 3.11 since it's going end of life soon
+:::
+
+---
+
+## Install System Prerequisites {.smaller}
+
+::: {.panel-tabset}
+
+### Linux
+
+```{bash}
+sudo apt update
+sudo apt install make git python3 python3-pip gfortran
+```
+
+### Windows
+
+Open **PowerShell as Administrator** and install WSL (takes a good while): 
+
+```powershell
+wsl --install
+```
+
+Reboot, install **Ubuntu** from the Windows App Store, then inside Ubuntu:
+
+```{bash}
+sudo apt update
+sudo apt install make git python3 python3-pip gfortran
+```
+
+Your Windows files are at `/mnt/c/`, `/mnt/d/`, etc.
+
+### macOS
+
+Install [Xcode](https://developer.apple.com/xcode/), open it once and then install the Xcode command-line tools (opens a dialog):
+
+```bash
+xcode-select --install
+```
+
+Install conda (e.g. via [Miniforge](https://github.com/conda-forge/miniforge) or [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main)).
+
+Create a conda environment and activate it:
+```bash
+conda create -n uclchem_school
+conda activate uclchem_school
+```
+
+After that you can install gfortran and python in the environment:
+
+```{bash}
+conda install -c conda-forge gfortran python=3.13 -y
+```
+
+::: {.callout-tip}
+Always use `-c conda-forge` on Apple Silicon — the default channel lags behind macOS updates.
+:::
+
+### Google Colab
+
+You can find a Colab that explains how to install UCLCHEM in Colab at [this link](https://gist.github.com/GijsVermarien/121a3b9d0e095702af225605d761eb72).
+
+:::
+
+---
+
+# Part 2 — Create Your Environment
+
+---
+
+## Create a Python Environment {#step-2-virtual-environment}
+
+::: {.panel-tabset}
+
+### conda (macOS)
+
+```{bash}
+conda activate uclchem_school
+```
+
+::: {.callout-warning}
+`conda activate` must be run in a **terminal** — it cannot run in a notebook cell.
+:::
+
+### venv (Linux / WSL / macOS)
+
+```{bash}
+python3 -m venv uclchem_env
+source uclchem_env/bin/activate
+```
+
+Your prompt will show `(uclchem_env)`.
+Deactivate later with `deactivate`.
+
+:::
+
+::: {.callout-note}
+Always work inside your environment. Installing into the system Python causes hard-to-debug conflicts.
+:::
+
+---
+
+# Part 3 — Environment Prerequisites
+
+---
+
+## Install Jupyter
+
+With your environment active, install Jupyter so you can run the tutorial notebooks:
+
+::: {.panel-tabset}
+
+### conda
+
+```{bash}
+conda install -c conda-forge jupyterlab ipykernel -y
+```
+
+### pip
+
+```{bash}
+pip install jupyterlab ipykernel
+python -m ipykernel install --user --name uclchem_school
+```
+
+:::
+
+Then launch:
+
+```{bash}
+jupyter lab
+```
+
+---
+
+# Part 4 — Clone & Install UCLCHEM
+
+---
+
+## Get the Code
+
+::: {.panel-tabset}
+
+### HTTPS
+
+```bash
+git clone https://github.com/uclchem/UCLCHEM.git uclchem
+```
+
+### SSH
+
+Requires you to set up local SSH keys, but allows you to interact with Github without passwords. [How to set up SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh).
+
+```bash
+git clone git@github.com:uclchem/UCLCHEM.git uclchem
+```
+
+:::
+
+---
+
+## Choose a Version
+
+By default `git clone` gives you the **main** (stable) branch.
+This branch is currently lacking behind due to all features being held back for the v4.0.0 release, 
+so we will switch to a release candidate branch for the tutorial.
+
+```{bash}
+git fetch
+git tag            # list available releases
+```
+
+Switch to a specific release (we will be using v4.0.0-rc3 for the tutorial):
+```{bash}
+git checkout v4.0.0-rc3
+```
+
+You can then inspect what the latest changes to the code are:
+
+```{bash}
+git log --oneline -5
+```
+
+::: {.callout-tip}
+Stick to a v4.0.0-rc3 during the workshop!
+:::
+
+---
+
+## Install UCLCHEM
+
+With your environment active, from the repo root:
+
+```{bash}
+cd uclchem
+pip install .
+```
+
+This compiles the Fortran and installs the Python wrapper. Takes ~1 minute.
+
+::: {.callout-warning}
+If pip fails, the most likely cause is a missing or wrong `gfortran`. Rerun the installer with the `--verbose` flag to see the full compiler error message, and check the troubleshooting guide.
+:::
+
+---
+
+## What gets installed
+
+Declared in `pyproject.toml` — all pulled in automatically:
+
+| Package | Purpose |
+|---|---|
+| `numpy` / `scipy` | Numerics |
+| `pandas` | Results as data frames |
+| `matplotlib` / `seaborn` | Plotting |
+| `pyyaml` | Config files |
+| `joblib` / `tqdm` | Grid runs & progress bars |
+| `h5py` / `xarray` / h5netcdf | Handling and storing simulation data |
+
+---
+
+# Part 5 — Check the Installation
+
+---
+
+## Verify the Import
+
+Everything from here on will be Python cells, so you can either run it via `python` `ipython` or inside a Jupyter notebook. 
+```{bash}
+python your_script.py
+```
+
+
+Then check that it is installed properly by importing and checking the version:
+```{python}
+import uclchem
+print(uclchem.version.__version__)
+```
+
+If this runs without error — **UCLCHEM is installed**.
+
+---
+
+## Run a First Model
+
+```{python}
+import uclchem
+print(uclchem.version.__version__)
+```
+
+then:
+
+```{python}
+params = {
+    "initialDens": 1e4,
+    "initialTemp": 10.0,
+    "finalTime":   1e6,
+    "freefall":    False,
+}
+
+cloud = uclchem.model.Cloud(
+    param_dict=params,
+    out_species=["CO", "H2O", "CH3OH"]
+)
+cloud.check_error()
+```
+
+OR 
+add `if __name__ == "__main__":` to the script below and run it:
+```{bash}
+python scripts/run_uclchem_tests.py
+python scripts/plot_uclchem_tests.py
+```
+
+---
+
+## Inspect the Results
+
+
+```{python}
+cloud.get_dataframes().head()
+```
+
+---
+
+## Check Element Conservation
+
+```{python}
+cloud.check_conservation(element_list=["H", "C", "N", "O", "S"])
+```
+
+Values below **1 %** are generally acceptable.
+
+If conservation is poor, tighten the solver tolerances and run it again:
+
+```{python}
+params["reltol"] = 1e-6
+params["abstol"] = 1e-12
+```
+
+---
+
+## Make a plot!
+Then plot it:
+```{python}
+fig, ax = cloud.create_abundance_plot(
+    species=["H", "H2", "$H", "$H2", "H2O", "$H2O", "CO", "$CO", "$CH3OH", "CH3OH"],
+    figsize=(10, 7),
+)
+ax = ax.set(xscale="log", ylim=(1e-15, 1), xlim=(1e3, 1e6))
+```
+     
+---
+
+## When to Reinstall
+
+| Trigger | Command |
+|---|---|
+| `git pull` update | `pip install --force-reinstall ./` |
+| Fortran source edit | `pip install ./` |
+| MakeRates network change | `pip install ./` |
+
+Development mode (Python edits instant, Fortran still needs reinstall) is available if you only change Python, but can be dangerous with Fortran editing!
+
+```bash
+pip install --no-build-isolation -e .
+```
+
+---
+
+## Summary
+
+::: {.incremental .show-first}
+- Satisfy system prerequisites (Python, gfortran, git)
+- Create and activate a Python environment (conda or venv)
+- Clone the UCLCHEM repo and switch to a the branch you need
+- Install UCLCHEM with `pip install .`
+- Verify the installation by importing, running a model, and plotting results
+:::
+
+
